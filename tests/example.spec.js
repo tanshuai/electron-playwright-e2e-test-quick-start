@@ -1,7 +1,7 @@
 const { _electron: electron } = require('playwright');
 const { test, expect } = require('@playwright/test');
 
-let windows, electronApp;
+let window, electronApp;
 
 test.beforeAll(async () => {
   // Launch Electron app.
