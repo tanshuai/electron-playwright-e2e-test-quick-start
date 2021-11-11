@@ -1,0 +1,29 @@
+{
+  "name": "electron-playwright-e2e-test-quick-start",
+  "version": "0.0.1",
+  "description": "A Playwright with GitHub Actions E2E Testing Sample for Electron App",
+  "author": "Tan Shuai <opensource@tanshuai.com>",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "playwright test"
+  },
+  "repository": "https://github.com/electron/electron-quick-start",
+  "keywords": [
+    "Playwright",
+    "Electron",
+    "E2E",
+    "Testing",
+    "GitHub Actions",
+    "quick",
+    "start",
+    "tutorial",
+    "demo"
+  ],
+  "license": "CC0-1.0",
+  "devDependencies": {
+    "electron": "^15.3.1",
+    "playwright": "^1.16.3",
+    "@playwright/test": "^1.16.3"
+  }
+}

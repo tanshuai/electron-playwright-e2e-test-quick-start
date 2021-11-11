@@ -1,0 +1,45 @@
+name: CI/CT for each push
+
+on:
+  push:
+    paths:
+      - '**.js'
+      - '**.ts'
+      - '**.json'
+      - '**/ci.yml'
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [16]
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+        
+    - name: Install dependencies 👨🏻‍💻
+      run: yarn
+    
+    - name: E2E Test for Electron 🧪
+      run: yarn test
+   
+    - name: Upload Test Results 🗃
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: cypress-output
+        path: tests/screenshots/**
+        
