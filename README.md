@@ -2,7 +2,7 @@
 [![CI/CT for each push](https://github.com/tanshuai/electron-playwright-e2e-test-quick-start/actions/workflows/ci.yml/badge.svg)](https://github.com/tanshuai/electron-playwright-e2e-test-quick-start/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/tanshuai/electron-playwright-e2e-test-quick-start/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/tanshuai/electron-playwright-e2e-test-quick-start/actions/workflows/codeql-analysis.yml)
 
-A Playwright CI/CT with GitHub Actions E2E Testing Sample for Electron App
+A Playwright CI/CT & E2E Testing Sample with GitHub Actions Workflow for Electron App
 
 This is a minimal Playwright E2E-testing sample for Electron application based on the [electron-quick-start
 ](https://github.com/electron/electron-quick-start) with [Quick Start Guide](https://electronjs.org/docs/latest/tutorial/quick-start) within the Electron documentation and [ElectronApplication | Playwright](https://playwright.dev/docs/api/class-electronapplication/) within the Playwright documentation.
