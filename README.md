@@ -23,3 +23,7 @@ yarn start
 
 ```
 
+## GitHub Actions Workflow
+
+View source code: 
+https://github.com/tanshuai/electron-playwright-e2e-test-quick-start/blob/main/.github/workflows/ci.yml
