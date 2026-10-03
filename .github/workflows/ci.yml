@@ -46,6 +46,10 @@ jobs:
           exit 1
         fi
         command -v xvfb-run
+        # Electron's actual launch error requires its SUID helper. Preserve Chromium sandboxing.
+        sudo chown root:root node_modules/electron/dist/chrome-sandbox
+        sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
+        test "$(stat -c '%u:%a' node_modules/electron/dist/chrome-sandbox)" = "0:4755"
 
     - name: E2E Test for Electron 🧪
       shell: bash
