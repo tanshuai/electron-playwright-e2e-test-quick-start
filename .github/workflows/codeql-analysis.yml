@@ -12,6 +12,7 @@
 name: "CodeQL"
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
   pull_request:
@@ -20,10 +21,18 @@ on:
   schedule:
     - cron: '37 22 * * 6'
 
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       actions: read
       contents: read
@@ -37,12 +46,83 @@ jobs:
         # Learn more about CodeQL language support at https://git.io/codeql-language-support
 
     steps:
+    - name: Check native CodeQL feature availability
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      shell: bash
+      run: |
+        python3 - <<'PY_CODEQL_PREFLIGHT'
+        import json
+        import os
+        import re
+        import subprocess
+        import sys
+        
+        KNOWN_DISABLED = {
+            "Code scanning is not enabled for this repository",
+            "Code scanning is not enabled for this repository.",
+            "Code scanning is not enabled for this repository. Please enable code scanning in the repository settings.",
+        }
+        
+        
+        def classify(status, body):
+            if status == 200:
+                # Advanced/manual setup is valid even when default setup is not-configured.
+                return 0, "AVAILABLE"
+            message = body.get("message") if isinstance(body, dict) else None
+            if status == 403 and message in KNOWN_DISABLED:
+                return 4, "CODE_SCANNING_EXPLICITLY_NOT_ENABLED"
+            return 5, "CODE_SCANNING_ACCESS_UNKNOWN"
+        
+        
+        def parse_response(text):
+            statuses = re.findall(r"^HTTP/\S+\s+(\d{3})", text, re.MULTILINE)
+            status = int(statuses[-1]) if statuses else None
+            parts = re.split(r"\r?\n\r?\n", text, maxsplit=1)
+            try:
+                body = json.loads(parts[1]) if len(parts) == 2 else {}
+            except json.JSONDecodeError:
+                body = {}
+            return status, body
+        
+        
+        def main():
+            repo = os.environ["GITHUB_REPOSITORY"]
+            if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo):
+                raise SystemExit("Invalid native repository identity")
+            try:
+                response = subprocess.run(
+                    ["gh", "api", "--method", "GET", "--include", f"/repos/{repo}/code-scanning/default-setup"],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60,
+                )
+                status, body = parse_response(response.stdout)
+            except (OSError, subprocess.TimeoutExpired):
+                status, body = None, {}
+            code, reason = classify(status, body)
+            summary = (
+                "CodeQL feature preflight passed; default/manual setup state does not suppress analysis."
+                if code == 0 else
+                "CodeQL blocked: HTTP403 explicitly reports code scanning not enabled. No license, feature, alert or budget setting was changed."
+                if code == 4 else
+                f"CodeQL access unresolved: HTTP {status or 'unknown'}. Generic403/404/network failures do not prove feature disabled; the safety gate remains failed."
+            )
+            with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
+                handle.write(summary + "\n")
+            print(reason)
+            # Neither HTTP payloads nor authentication environment values enter output.
+            sys.exit(code)
+        
+        
+        if __name__ == "__main__":
+            main()
+        PY_CODEQL_PREFLIGHT
+
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v1
+      uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4; official Node24
       with:
         languages: ${{ matrix.language }}
         # If you wish to specify custom queries, you can do so here or in a config file.
@@ -53,7 +133,7 @@ jobs:
     # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
     # If this step fails, then you should remove it and run the build manually (see below)
     - name: Autobuild
-      uses: github/codeql-action/autobuild@v1
+      uses: github/codeql-action/autobuild@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4; official Node24
 
     # ℹ️ Command-line programs to run using the OS shell.
     # 📚 https://git.io/JvXDl
@@ -67,4 +147,4 @@ jobs:
     #   make release
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v1
+      uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4; official Node24
