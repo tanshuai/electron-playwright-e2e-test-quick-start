@@ -67,7 +67,7 @@ jobs:
         
         def classify(status, body):
             if status == 200:
-                # Advanced/manual setup is valid even when default setup is not-configured.
+                # A successful alert read proves native Security events access; zero alerts is valid.
                 return 0, "AVAILABLE"
             message = body.get("message") if isinstance(body, dict) else None
             if status == 403 and message in KNOWN_DISABLED:
@@ -92,7 +92,7 @@ jobs:
                 raise SystemExit("Invalid native repository identity")
             try:
                 response = subprocess.run(
-                    ["gh", "api", "--method", "GET", "--include", f"/repos/{repo}/code-scanning/default-setup"],
+                    ["gh", "api", "--method", "GET", "--include", f"/repos/{repo}/code-scanning/alerts?per_page=1"],
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60,
                 )
                 status, body = parse_response(response.stdout)
@@ -100,7 +100,7 @@ jobs:
                 status, body = None, {}
             code, reason = classify(status, body)
             summary = (
-                "CodeQL feature preflight passed; default/manual setup state does not suppress analysis."
+                "CodeQL native Security events access passed; proceed with all actual analysis steps."
                 if code == 0 else
                 "CodeQL blocked: HTTP403 explicitly reports code scanning not enabled. No license, feature, alert or budget setting was changed."
                 if code == 4 else
