@@ -16,7 +16,10 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
 
+    timeout-minutes: 15
+
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         node-version: [16]
@@ -31,15 +34,40 @@ jobs:
         cache: 'yarn'
         
     - name: Install dependencies 👨🏻‍💻
-      run: yarn
+      run: yarn --frozen-lockfile
     
+    - name: Verify Linux Electron host libraries
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        missing=$(ldd node_modules/electron/dist/electron | grep 'not found' || true)
+        if [[ -n "$missing" ]]; then
+          printf '%s\n' "$missing"
+          exit 1
+        fi
+        command -v xvfb-run
+
     - name: E2E Test for Electron 🧪
-      run: yarn test
+      shell: bash
+      env:
+        DEBUG: pw:browser
+      run: |
+        set -o pipefail
+        if [[ "$RUNNER_OS" == "Linux" ]]; then
+          xvfb-run --auto-servernum yarn test 2>&1 | tee electron-launch.log
+        else
+          yarn test 2>&1 | tee electron-launch.log
+        fi
    
     - name: Upload Test Results 🗃
       if: always()
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: screenshots-${{ matrix.os }}-${{ matrix.node-version }}
-        path: tests/screenshots/**
+        retention-days: 7
+        path: |
+          tests/screenshots/**
+          test-results/**
+          electron-launch.log
+        if-no-files-found: error
         
